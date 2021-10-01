@@ -77,9 +77,11 @@ def preRun():
     for cell in sim.net.cells:
         if cell.tags.get('cellModel') == 'NetStim':
             #cell.hRandom.Random123(sim.hashStr('NetStim'), cell.gid, cell.params['seed'])
-            if sim.cfg.coreneuron:
+            if sim.cfg.coreneuron or sim.cfg.random123:
+                print("Setting random123 stimulus")
                 cell.hPointp.noiseFromRandom123(utils.hashStr('NetStim'), cell.gid, cell.params['seed'])
             else:
+                print("Setting legacy stimulus")
                 utils._init_stim_randomizer(cell.hRandom, 'NetStim', cell.gid, cell.params['seed'])
                 cell.hRandom.negexp(1)
                 cell.hPointp.noiseFromRandom(cell.hRandom)
@@ -91,14 +93,17 @@ def preRun():
             for stim in cell.stims:
                 if 'hRandom' in stim:
                     #stim['hRandom'].Random123(sim.hashStr(stim['source']), cell.gid, stim['seed'])
-                    if not sim.cfg.coreneuron:
+                    if not sim.cfg.coreneuron and not sim.cfg.random123:
+                        print("Setting legacy stimulus")
                         utils._init_stim_randomizer(stim['hRandom'], stim['type'], cell.gid, stim['seed'])
                         stim['hRandom'].negexp(1)
                     # Check if noiseFromRandom is in stim['hObj']; see https://github.com/Neurosim-lab/netpyne/issues/219
                     if not isinstance(stim['hObj'].noiseFromRandom, dict):
-                        if sim.cfg.coreneuron:
+                        if sim.cfg.coreneuron or sim.cfg.random123:
+                            print("Setting random123 stimulus")
                             stim['hObj'].noiseFromRandom123(sim.hashStr(stim['type']), cell.gid, stim['seed'])
                         else:
+                            print("Setting legacy stimulus")
                             stim['hObj'].noiseFromRandom(stim['hRandom'])
 
     # handler for recording LFP
@@ -152,13 +157,18 @@ def runSim(skipPreRun=False):
         if sim.rank == 0: print('\nRunning simulation using CoreNEURON for %s ms...'%sim.cfg.duration)
         from neuron import coreneuron
         coreneuron.enable = True
+        coreneuron.file_mode = True
         if sim.cfg.gpu == True:
             coreneuron.gpu = True
             coreneuron.cell_permute = 2
+        coreneuron.prcellstate = 102 
     else:
         if sim.rank == 0: print('\nRunning simulation using NEURON for %s ms...'%sim.cfg.duration)
-
+        sim.pc.prcellstate(102, 'nrn_start')
+        #sim.pc.nrnbbcore_write('coredat')
     sim.pc.psolve(sim.cfg.duration)
+    if sim.cfg.coreneuron == False:
+        sim.pc.prcellstate(102, 'nrn_end_{}'.format(h.t))
 
     sim.pc.barrier() # Wait for all hosts to get to this point
     sim.timing('stop', 'runTime')

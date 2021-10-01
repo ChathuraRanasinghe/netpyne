@@ -22,7 +22,7 @@ cfg.duration = 0.5*1e3
 cfg.dt = 0.05
 cfg.seeds = {'conn': 4321, 'stim': 1234, 'loc': 4321}
 cfg.hParams = {'celsius': 34, 'v_init': -80}
-cfg.coreneuron = False # run via coreneuron (alpha support)
+cfg.coreneuron = True # run via coreneuron (alpha support)
 cfg.gpu = False # need coreneuron enabled
 cfg.verbose = 0
 cfg.createNEURONObj = True
@@ -31,6 +31,7 @@ cfg.cvode_active = False
 cfg.cvode_atol = 1e-6
 cfg.cache_efficient = True
 cfg.printRunTime = 0.1
+cfg.random123 = True 
 
 cfg.includeParamsLabel = False
 cfg.printPopAvgRates = True
